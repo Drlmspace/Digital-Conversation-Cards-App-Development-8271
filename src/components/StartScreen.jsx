@@ -4,7 +4,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { categories } from '../data/conversationCards';
 
-const { FiPlay, FiShield, FiHeart, FiUsers, FiClock, FiEye, FiEyeOff, FiPlus, FiTrash2, FiEdit3, FiMusic, FiVolume2, FiList, FiCheck, FiX, FiLink, FiHeadphones, FiDollarSign, FiTarget } = FiIcons;
+const { FiPlay, FiShield, FiHeart, FiUsers, FiClock, FiEye, FiEyeOff, FiPlus, FiTrash2, FiEdit3, FiMusic, FiVolume2, FiList, FiCheck, FiX, FiLink, FiHeadphones, FiDollarSign, FiTarget, FiStar } = FiIcons;
 
 const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCustomCardsChange }) => {
   const [showAdminPortal, setShowAdminPortal] = useState(false);
@@ -87,8 +87,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (loginData.username === ADMIN_CREDENTIALS.username && 
-        loginData.password === ADMIN_CREDENTIALS.password) {
+    if (loginData.username === ADMIN_CREDENTIALS.username && loginData.password === ADMIN_CREDENTIALS.password) {
       setIsAuthenticated(true);
       setShowLogin(false);
       setShowAdminPortal(true);
@@ -115,11 +114,25 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     onSettingsChange({ ...settings, selectedCategories: newCategories });
   };
 
+  const handleCustomOnlyToggle = (enabled) => {
+    onSettingsChange({ ...settings, customCardsOnly: enabled });
+  };
+
   const handleStartSession = () => {
-    if (settings.selectedCategories.length === 0) {
-      alert('Please select at least one category to begin the conversation session.');
-      return;
+    // Check if custom cards only is enabled
+    if (settings.customCardsOnly) {
+      if (customCards.length === 0) {
+        alert('You have enabled "Custom Cards Only" but have no custom cards created. Please create some custom cards first or disable this option.');
+        return;
+      }
+    } else {
+      // Original validation for regular mode
+      if (settings.selectedCategories.length === 0) {
+        alert('Please select at least one category to begin the conversation session.');
+        return;
+      }
     }
+    
     onStart();
   };
 
@@ -161,15 +174,18 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
 
   const handleEditCard = (card) => {
     setEditingCard(card);
-    setNewCard({ question: card.question, category: card.category });
+    setNewCard({
+      question: card.question,
+      category: card.category
+    });
   };
 
   const handleUpdateCard = (e) => {
     e.preventDefault();
     if (!newCard.question.trim() || !editingCard) return;
 
-    const updatedCards = customCards.map(card => 
-      card.id === editingCard.id 
+    const updatedCards = customCards.map(card =>
+      card.id === editingCard.id
         ? { ...card, question: newCard.question.trim(), category: newCard.category }
         : card
     );
@@ -192,17 +208,15 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
 
   const validateMusicUrl = (url, index) => {
     if (!url) return true; // Empty URL is valid
-    
+
     try {
       new URL(url); // Basic URL validation
-      
       // Clear error if valid
       setMusicUrlErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[index];
         return newErrors;
       });
-      
       return true;
     } catch {
       setMusicUrlErrors(prev => ({
@@ -219,7 +233,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
       alert('Maximum of 10 music URLs allowed');
       return;
     }
-    
+
     if (validateMusicUrl(newMusicUrl, 'new')) {
       const newUrls = [...settings.musicUrls, newMusicUrl.trim()];
       onSettingsChange({ ...settings, musicUrls: newUrls });
@@ -302,8 +316,8 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     e.preventDefault();
     if (!newAd.title.trim() || !newAd.content.trim() || !editingAd) return;
 
-    const updatedAds = (settings.advertisements?.ads || []).map(ad => 
-      ad.id === editingAd.id 
+    const updatedAds = (settings.advertisements?.ads || []).map(ad =>
+      ad.id === editingAd.id
         ? {
             ...ad,
             title: newAd.title.trim(),
@@ -386,6 +400,9 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
   };
 
   const getTotalCards = () => {
+    if (settings.customCardsOnly) {
+      return customCards.length;
+    }
     return 150 + customCards.length;
   };
 
@@ -404,34 +421,23 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
   const getMusicTitle = (url) => {
     try {
       const urlType = getUrlType(url);
-      
       switch (urlType) {
         case 'direct':
           const filename = url.split('/').pop().split('?')[0];
           return filename || 'Audio File';
-        case 'youtube':
-          return 'YouTube Track';
-        case 'spotify':
-          return 'Spotify Track';
-        case 'soundcloud':
-          return 'SoundCloud Track';
-        case 'apple':
-          return 'Apple Music Track';
-        case 'pandora':
-          return 'Pandora Track';
-        case 'deezer':
-          return 'Deezer Track';
-        case 'tidal':
-          return 'Tidal Track';
-        case 'bandcamp':
-          return 'Bandcamp Track';
-        case 'mixcloud':
-          return 'Mixcloud Track';
+        case 'youtube': return 'YouTube Track';
+        case 'spotify': return 'Spotify Track';
+        case 'soundcloud': return 'SoundCloud Track';
+        case 'apple': return 'Apple Music Track';
+        case 'pandora': return 'Pandora Track';
+        case 'deezer': return 'Deezer Track';
+        case 'tidal': return 'Tidal Track';
+        case 'bandcamp': return 'Bandcamp Track';
+        case 'mixcloud': return 'Mixcloud Track';
         case 'generic':
           const domain = new URL(url).hostname.replace('www.', '');
           return `${domain.charAt(0).toUpperCase() + domain.slice(1)} Audio`;
-        default:
-          return 'Music Track';
+        default: return 'Music Track';
       }
     } catch {
       return 'Music Track';
@@ -443,8 +449,14 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     switch (urlType) {
       case 'direct': return FiHeadphones;
       case 'youtube': return FiPlay;
-      case 'spotify': case 'apple': case 'pandora': case 'deezer': case 'tidal': 
-      case 'soundcloud': case 'bandcamp': case 'mixcloud': return FiMusic;
+      case 'spotify':
+      case 'apple':
+      case 'pandora':
+      case 'deezer':
+      case 'tidal':
+      case 'soundcloud':
+      case 'bandcamp':
+      case 'mixcloud': return FiMusic;
       default: return FiLink;
     }
   };
@@ -500,16 +512,39 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                   <SafeIcon icon={FiHeart} className="w-12 h-12 text-white" />
                 </div>
               </div>
-              
               <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
                 Start Once, Talk Forever
               </h1>
-              
               <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
                 Digital conversation cards that bring families together through meaningful dialogue. 
                 Set your preferences, press start, and let the conversations flow naturally.
               </p>
             </motion.div>
+
+            {/* Custom Cards Only Warning */}
+            {settings.customCardsOnly && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 max-w-2xl mx-auto"
+              >
+                <div className="flex items-center gap-3">
+                  <SafeIcon icon={FiStar} className="w-6 h-6 text-yellow-600" />
+                  <div className="text-left">
+                    <p className="text-yellow-800 font-semibold">Custom Cards Only Mode</p>
+                    <p className="text-yellow-700 text-sm">
+                      Only your custom conversation cards will be used in this session.
+                      {customCards.length === 0 && (
+                        <span className="block text-red-600 font-medium mt-1">
+                          ⚠️ No custom cards available! Please create some first.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Stats */}
             <motion.div
@@ -522,31 +557,42 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                 <SafeIcon icon={FiUsers} className="w-8 h-8 text-primary-600 mx-auto mb-3" />
                 <div className="text-2xl font-bold text-gray-900">{getTotalCards()}</div>
                 <div className="text-sm text-gray-600">
-                  Conversation Cards
-                  {customCards.length > 0 && (
+                  {settings.customCardsOnly ? 'Custom Cards' : 'Conversation Cards'}
+                  {!settings.customCardsOnly && customCards.length > 0 && (
                     <span className="block text-xs text-primary-600 mt-1">
                       +{customCards.length} custom
                     </span>
                   )}
+                  {settings.customCardsOnly && (
+                    <span className="block text-xs text-yellow-600 mt-1">
+                      Custom Only Mode
+                    </span>
+                  )}
                 </div>
               </div>
-              
+
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <SafeIcon icon={FiClock} className="w-8 h-8 text-primary-600 mx-auto mb-3" />
                 <div className="text-2xl font-bold text-gray-900">{formatDuration(settings.duration)}</div>
                 <div className="text-sm text-gray-600">Time per Card</div>
               </div>
-              
+
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <SafeIcon icon={settings.musicUrls?.length > 0 ? FiMusic : FiHeart} className="w-8 h-8 text-primary-600 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-gray-900">{settings.selectedCategories.length}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {settings.customCardsOnly ? customCards.length : settings.selectedCategories.length}
+                </div>
                 <div className="text-sm text-gray-600">
-                  Active Categories
+                  {settings.customCardsOnly ? 'Active Custom Cards' : 'Active Categories'}
                   {settings.musicUrls?.length > 0 && (
-                    <span className="block text-xs text-primary-600 mt-1">+ {settings.musicUrls.length} Audio Track{settings.musicUrls.length > 1 ? 's' : ''}</span>
+                    <span className="block text-xs text-primary-600 mt-1">
+                      + {settings.musicUrls.length} Audio Track{settings.musicUrls.length > 1 ? 's' : ''}
+                    </span>
                   )}
                   {settings.advertisements?.enabled && settings.advertisements?.ads?.length > 0 && (
-                    <span className="block text-xs text-orange-600 mt-1">+ {settings.advertisements.ads.length} Advertisement{settings.advertisements.ads.length > 1 ? 's' : ''}</span>
+                    <span className="block text-xs text-orange-600 mt-1">
+                      + {settings.advertisements.ads.length} Advertisement{settings.advertisements.ads.length > 1 ? 's' : ''}
+                    </span>
                   )}
                 </div>
               </div>
@@ -566,7 +612,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                 <SafeIcon icon={FiPlay} className="w-6 h-6 group-hover:scale-110 transition-transform" />
                 Start Conversation Session
               </button>
-              
+
               <button
                 onClick={handleAdminPortalClick}
                 className="bg-white hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-xl text-lg font-medium border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-3"
@@ -737,6 +783,51 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
 
             {activeTab === 'settings' ? (
               <div className="space-y-8">
+                {/* Custom Cards Only Option */}
+                <div className="bg-yellow-50 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <SafeIcon icon={FiStar} className="w-5 h-5 text-yellow-600" />
+                      Custom Cards Only Mode
+                    </h3>
+                    <button
+                      onClick={() => handleCustomOnlyToggle(!settings.customCardsOnly)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        settings.customCardsOnly
+                          ? 'bg-yellow-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {settings.customCardsOnly ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                  <div className="text-sm text-gray-700 space-y-2">
+                    <p>
+                      <strong>When enabled:</strong> Only your custom conversation cards will be used during sessions. 
+                      All built-in categories will be ignored.
+                    </p>
+                    <p>
+                      <strong>Perfect for:</strong> Personalized family sessions, specific themes, or when you want 
+                      complete control over the conversation topics.
+                    </p>
+                    {settings.customCardsOnly && customCards.length === 0 && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
+                        <p className="text-red-700 font-medium">
+                          ⚠️ You have no custom cards created yet! Please create some custom cards in the "Custom Cards" tab 
+                          before starting a session, or disable this option.
+                        </p>
+                      </div>
+                    )}
+                    {settings.customCardsOnly && customCards.length > 0 && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                        <p className="text-green-700 font-medium">
+                          ✓ Ready to use {customCards.length} custom card{customCards.length > 1 ? 's' : ''} in your session!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Timer Duration */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Timer Duration</h3>
@@ -908,41 +999,43 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                   </div>
                 </div>
 
-                {/* Categories */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Conversation Categories ({settings.selectedCategories.length} selected)
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {Object.entries(categories).map(([key, category]) => (
-                      <div
-                        key={key}
-                        onClick={() => handleCategoryToggle(key)}
-                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          settings.selectedCategories.includes(key)
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{category.name}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                          </div>
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                {/* Categories - Only show if not in custom cards only mode */}
+                {!settings.customCardsOnly && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Conversation Categories ({settings.selectedCategories.length} selected)
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {Object.entries(categories).map(([key, category]) => (
+                        <div
+                          key={key}
+                          onClick={() => handleCategoryToggle(key)}
+                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                             settings.selectedCategories.includes(key)
-                              ? 'border-primary-500 bg-primary-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {settings.selectedCategories.includes(key) && (
-                              <SafeIcon icon={FiCheck} className="w-3 h-3 text-white" />
-                            )}
+                              ? 'border-primary-500 bg-primary-50'
+                              : 'border-gray-200 hover:border-gray-300 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{category.name}</h4>
+                              <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                            </div>
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              settings.selectedCategories.includes(key)
+                                ? 'border-primary-500 bg-primary-500'
+                                : 'border-gray-300'
+                            }`}>
+                              {settings.selectedCategories.includes(key) && (
+                                <SafeIcon icon={FiCheck} className="w-3 h-3 text-white" />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : activeTab === 'custom-cards' ? (
               <div className="space-y-8">
@@ -965,6 +1058,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                         required
                       />
                     </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Category
@@ -979,6 +1073,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                         ))}
                       </select>
                     </div>
+
                     <div className="flex gap-3">
                       <button
                         type="submit"
@@ -1062,7 +1157,6 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                       {settings.advertisements?.enabled ? 'Enabled' : 'Disabled'}
                     </button>
                   </div>
-
                   {settings.advertisements?.enabled && (
                     <div className="space-y-4">
                       <div>
@@ -1109,6 +1203,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                           required
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Advertisement Content (HTML supported)
@@ -1122,6 +1217,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                           required
                         />
                       </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1137,6 +1233,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                             required
                           />
                         </div>
+
                         <div className="flex items-center">
                           <label className="flex items-center cursor-pointer">
                             <input
@@ -1158,6 +1255,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                           </label>
                         </div>
                       </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1171,6 +1269,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                             placeholder="e.g., Learn More, Visit Website"
                           />
                         </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Action URL (optional)
@@ -1184,6 +1283,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                           />
                         </div>
                       </div>
+
                       <div className="flex gap-3">
                         <button
                           type="submit"
@@ -1234,7 +1334,10 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-sm text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: ad.content }} />
+                                <div 
+                                  className="text-sm text-gray-600 mb-2"
+                                  dangerouslySetInnerHTML={{ __html: ad.content }}
+                                />
                                 {ad.actionText && ad.actionUrl && (
                                   <div className="text-xs text-blue-600">
                                     Action: {ad.actionText} → {ad.actionUrl}
@@ -1269,13 +1372,16 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 mt-8">
               <button
                 onClick={handleStartSession}
-                disabled={settings.selectedCategories.length === 0}
+                disabled={
+                  settings.customCardsOnly 
+                    ? customCards.length === 0 
+                    : settings.selectedCategories.length === 0
+                }
                 className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <SafeIcon icon={FiPlay} className="w-5 h-5" />
                 Start Session
               </button>
-              
               <button
                 onClick={closeAllModals}
                 className="flex-1 sm:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-200"

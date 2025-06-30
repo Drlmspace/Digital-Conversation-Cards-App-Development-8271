@@ -8,6 +8,7 @@ function App() {
   const [settings, setSettings] = useState({
     duration: 60, // minutes - changed to 1 hour (60 minutes)
     selectedCategories: ['childhood', 'family', 'dreams', 'values', 'fun', 'current', 'reflection'],
+    customCardsOnly: false, // New option for custom cards only mode
     musicUrls: [], // Changed to array for multiple URLs
     musicVolume: 0.3, // Added volume control (30% default)
     advertisements: {
@@ -40,7 +41,7 @@ function App() {
           parsed.musicUrls = [parsed.musicUrl];
           delete parsed.musicUrl;
         }
-
+        
         // Ensure advertisements object exists
         if (!parsed.advertisements) {
           parsed.advertisements = {
@@ -49,7 +50,12 @@ function App() {
             ads: []
           };
         }
-
+        
+        // Ensure customCardsOnly exists
+        if (parsed.customCardsOnly === undefined) {
+          parsed.customCardsOnly = false;
+        }
+        
         setSettings(prev => ({ ...prev, ...parsed }));
       } catch (error) {
         console.error('Error loading settings:', error);
