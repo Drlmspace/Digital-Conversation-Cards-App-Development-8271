@@ -11,6 +11,8 @@ function App() {
     customCardsOnly: false, // New option for custom cards only mode
     musicUrls: [], // Changed to array for multiple URLs
     musicVolume: 0.3, // Added volume control (30% default)
+    customTitle: '', // New: Custom title
+    customDescription: '', // New: Custom description
     footerAd: {
       enabled: false,
       text: '',
@@ -42,7 +44,7 @@ function App() {
           parsed.musicUrls = [parsed.musicUrl];
           delete parsed.musicUrl;
         }
-
+        
         // Ensure footerAd object exists
         if (!parsed.footerAd) {
           parsed.footerAd = {
@@ -52,12 +54,20 @@ function App() {
             linkText: ''
           };
         }
-
+        
         // Ensure customCardsOnly exists
         if (parsed.customCardsOnly === undefined) {
           parsed.customCardsOnly = false;
         }
 
+        // Ensure custom title and description exist
+        if (parsed.customTitle === undefined) {
+          parsed.customTitle = '';
+        }
+        if (parsed.customDescription === undefined) {
+          parsed.customDescription = '';
+        }
+        
         setSettings(prev => ({ ...prev, ...parsed }));
       } catch (error) {
         console.error('Error loading settings:', error);

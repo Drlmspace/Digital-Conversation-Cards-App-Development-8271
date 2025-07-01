@@ -26,6 +26,15 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
   const audioRef = useRef(null);
   const embedRef = useRef(null);
 
+  // Get current title and description with defaults
+  const getCurrentTitle = () => {
+    return settings.customTitle || 'Start Once, Talk Forever';
+  };
+
+  const getCurrentDescription = () => {
+    return settings.customDescription || 'Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally.';
+  };
+
   // Initialize and shuffle cards
   useEffect(() => {
     if (settings.customCardsOnly) {
@@ -60,10 +69,10 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
 
   // Determine if URL is a streaming service that needs iframe
   const isStreamingService = (url) => {
-    return url.includes('youtube.com') || url.includes('youtu.be') || 
-           url.includes('spotify.com') || url.includes('soundcloud.com') || 
-           url.includes('apple.com') || url.includes('pandora.com') || 
-           url.includes('deezer.com') || url.includes('tidal.com') || 
+    return url.includes('youtube.com') || url.includes('youtu.be') ||
+           url.includes('spotify.com') || url.includes('soundcloud.com') ||
+           url.includes('apple.com') || url.includes('pandora.com') ||
+           url.includes('deezer.com') || url.includes('tidal.com') ||
            url.includes('bandcamp.com') || url.includes('mixcloud.com');
   };
 
@@ -186,7 +195,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
     setCurrentTrackTitle(getTrackTitle(currentUrl));
 
     let cleanup;
-
     if (isDirectAudioFile(currentUrl)) {
       setupDirectAudio(currentUrl).then(cleanupFn => {
         cleanup = cleanupFn;
@@ -195,7 +203,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       setMusicError('');
       setIsAudioLoading(false);
       setAudioPlaybackError('');
-
+      
       if (isStreamingService(currentUrl)) {
         // Will be handled by iframe
       } else {
@@ -265,7 +273,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
         setIsPaused(false);
       }, 30000);
       setEmergencyPauseTimeout(timeout);
-
+      
       return () => {
         if (timeout) clearTimeout(timeout);
       };
@@ -352,9 +360,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
         <div className="text-center">
           <SafeIcon icon={FiRefreshCw} className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
           <p className="text-lg text-gray-600">
-            {settings.customCardsOnly 
-              ? 'No custom cards available for this session...' 
-              : 'Preparing your conversation cards...'}
+            {settings.customCardsOnly ? 'No custom cards available for this session...' : 'Preparing your conversation cards...'}
           </p>
           {settings.customCardsOnly && (
             <div className="mt-4">
@@ -391,7 +397,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
             width="0"
             height="0"
             frameBorder="0"
-            allow="autoplay;encrypted-media;fullscreen"
+            allow="autoplay; encrypted-media; fullscreen"
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
             onError={() => {
               setMusicError(`Unable to load ${getTrackTitle(currentUrl)}`);
@@ -533,12 +539,13 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
             </div>
           </div>
           <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent mb-2`}>
-            {settings.customCardsOnly ? 'Custom Cards Session' : 'Start Once, Talk Forever'}
+            {settings.customCardsOnly ? 'Custom Cards Session' : getCurrentTitle()}
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
             {settings.customCardsOnly 
               ? 'Enjoying your personalized conversation cards designed specifically for your family.'
-              : 'Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally.'}
+              : getCurrentDescription()
+            }
           </p>
         </div>
       </div>
@@ -585,7 +592,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
                   >
                     {currentCard?.question}
                   </motion.h1>
-
                   {currentCard?.isCustom && (
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -616,7 +622,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
                       <SafeIcon icon={isMusicMuted ? FiVolumeX : FiMusic} className={`w-5 h-5 ${isMusicMuted ? 'text-gray-400' : 'text-primary-600'}`} />
                     )}
                   </div>
-
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <motion.div
                       className="bg-primary-600 h-2 rounded-full transition-all duration-1000"
@@ -640,12 +645,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
                       <SafeIcon icon={FiEye} className="w-4 h-4 text-blue-600" />
                       <span className="text-blue-600 font-medium text-xs">Advertisement</span>
                     </div>
-                    
-                    <div 
-                      className="text-gray-800 mb-4 text-sm leading-relaxed" 
-                      dangerouslySetInnerHTML={{ __html: settings.footerAd.text }} 
-                    />
-                    
+                    <div className="text-gray-800 mb-4 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: settings.footerAd.text }} />
                     {settings.footerAd.url && settings.footerAd.linkText && (
                       <motion.a
                         href={settings.footerAd.url}

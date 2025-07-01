@@ -4,7 +4,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { categories } from '../data/conversationCards';
 
-const { FiPlay, FiShield, FiHeart, FiUsers, FiClock, FiEye, FiEyeOff, FiPlus, FiTrash2, FiEdit3, FiMusic, FiVolume2, FiList, FiCheck, FiX, FiLink, FiHeadphones, FiTarget, FiStar, FiExternalLink } = FiIcons;
+const { FiPlay, FiShield, FiHeart, FiUsers, FiClock, FiEye, FiEyeOff, FiPlus, FiTrash2, FiEdit3, FiMusic, FiVolume2, FiList, FiCheck, FiX, FiLink, FiHeadphones, FiTarget, FiStar, FiExternalLink, FiType, FiFileText, FiRefreshCw } = FiIcons;
 
 const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCustomCardsChange }) => {
   const [showAdminPortal, setShowAdminPortal] = useState(false);
@@ -36,6 +36,15 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     { value: 30, label: '30 minutes' },
     { value: 60, label: '1 hour' }
   ];
+
+  // Get current title and description with defaults
+  const getCurrentTitle = () => {
+    return settings.customTitle || 'Start Once, Talk Forever';
+  };
+
+  const getCurrentDescription = () => {
+    return settings.customDescription || 'Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally.';
+  };
 
   // Determine if URL is a direct audio file
   const isDirectAudioFile = (url) => {
@@ -257,6 +266,24 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     onSettingsChange(newSettings);
   };
 
+  const handleCustomTitleChange = (title) => {
+    onSettingsChange({ ...settings, customTitle: title });
+  };
+
+  const handleCustomDescriptionChange = (description) => {
+    onSettingsChange({ ...settings, customDescription: description });
+  };
+
+  const resetToDefaults = () => {
+    if (confirm('Are you sure you want to reset the title and description to defaults?')) {
+      onSettingsChange({ 
+        ...settings, 
+        customTitle: '', 
+        customDescription: '' 
+      });
+    }
+  };
+
   const getTotalCards = () => {
     if (settings.customCardsOnly) {
       return customCards.length;
@@ -371,10 +398,10 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                 </div>
               </div>
               <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-                Start Once, Talk Forever
+                {getCurrentTitle()}
               </h1>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally.
+                {getCurrentDescription()}
               </p>
             </motion.div>
 
@@ -584,7 +611,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                 </div>
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">Admin Portal</h2>
-                  <p className="text-sm text-gray-600">Customize conversation settings, create custom cards, and manage footer advertisement</p>
+                  <p className="text-sm text-gray-600">Customize conversation settings, create custom cards, and manage branding</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -604,10 +631,20 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-gray-200 mb-8">
+            <div className="flex border-b border-gray-200 mb-8 overflow-x-auto">
+              <button
+                onClick={() => setActiveTab('branding')}
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${
+                  activeTab === 'branding'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Title & Description
+              </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${
                   activeTab === 'settings'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -617,7 +654,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
               </button>
               <button
                 onClick={() => setActiveTab('custom-cards')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${
                   activeTab === 'custom-cards'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -627,7 +664,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
               </button>
               <button
                 onClick={() => setActiveTab('advertisement')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${
                   activeTab === 'advertisement'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -637,7 +674,104 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
               </button>
             </div>
 
-            {activeTab === 'settings' ? (
+            {activeTab === 'branding' ? (
+              <div className="space-y-8">
+                {/* Custom Title & Description */}
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <SafeIcon icon={FiType} className="w-5 h-5 text-purple-600" />
+                      Custom Title & Description
+                    </h3>
+                    <button
+                      onClick={resetToDefaults}
+                      className="text-purple-600 hover:text-purple-700 text-sm flex items-center gap-1"
+                    >
+                      <SafeIcon icon={FiRefreshCw} className="w-3 h-3" />
+                      Reset to Defaults
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-6">
+                    Customize the main title and description that appears on your start screen. Leave fields empty to use default text.
+                  </p>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Custom Title
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.customTitle || ''}
+                        onChange={(e) => handleCustomTitleChange(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        placeholder="Start Once, Talk Forever"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This will replace the main headline on your start screen
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Custom Description
+                      </label>
+                      <textarea
+                        value={settings.customDescription || ''}
+                        onChange={(e) => handleCustomDescriptionChange(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                        placeholder="Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally."
+                        rows="4"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This will replace the subtitle text below your main headline
+                      </p>
+                    </div>
+
+                    {/* Live Preview */}
+                    <div className="border-t pt-6">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                        <SafeIcon icon={FiEye} className="w-4 h-4" />
+                        Live Preview
+                      </h4>
+                      <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+                        <div className="flex justify-center mb-4">
+                          <div className="bg-primary-600 p-4 rounded-full shadow-sm">
+                            <SafeIcon icon={FiHeart} className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent mb-4">
+                          {getCurrentTitle()}
+                        </h1>
+                        <p className="text-gray-600 leading-relaxed max-w-md mx-auto">
+                          {getCurrentDescription()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Character Counts */}
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-blue-700 font-medium">Title Length:</span>
+                          <span className={`ml-2 ${getCurrentTitle().length > 50 ? 'text-orange-600' : 'text-blue-600'}`}>
+                            {getCurrentTitle().length} characters
+                            {getCurrentTitle().length > 50 && ' (Consider shortening for mobile)'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-blue-700 font-medium">Description Length:</span>
+                          <span className={`ml-2 ${getCurrentDescription().length > 200 ? 'text-orange-600' : 'text-blue-600'}`}>
+                            {getCurrentDescription().length} characters
+                            {getCurrentDescription().length > 200 && ' (Consider shortening for clarity)'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'settings' ? (
               <div className="space-y-8">
                 {/* Custom Cards Only Option */}
                 <div className="bg-yellow-50 rounded-xl p-6">
