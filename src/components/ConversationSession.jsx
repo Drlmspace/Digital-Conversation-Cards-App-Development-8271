@@ -4,7 +4,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { getFilteredCards, shuffleArray, categories } from '../data/conversationCards';
 
-const { FiPause, FiPlay, FiSquare, FiClock, FiRefreshCw, FiHeart, FiMusic, FiVolumeX, FiVolume2, FiSkipForward, FiAlertTriangle, FiSkipBack, FiEye, FiX, FiStar, FiDollarSign, FiExternalLink } = FiIcons;
+const { FiPause, FiPlay, FiSquare, FiClock, FiRefreshCw, FiHeart, FiMusic, FiVolumeX, FiVolume2, FiSkipForward, FiAlertTriangle, FiEye, FiStar, FiExternalLink } = FiIcons;
 
 const ConversationSession = ({ settings, onEndSession, customCards }) => {
   const [cards, setCards] = useState([]);
@@ -23,25 +23,15 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
   const [audioPlaybackError, setAudioPlaybackError] = useState('');
   const [currentTrackTitle, setCurrentTrackTitle] = useState('');
 
-  // Inline Advertisement states
-  const [isShowingAd, setIsShowingAd] = useState(false);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-  const [adTimeRemaining, setAdTimeRemaining] = useState(0);
-  const [cardsSinceLastAd, setCardsSinceLastAd] = useState(0);
-  const [totalCardsShown, setTotalCardsShown] = useState(0);
-  const [currentAd, setCurrentAd] = useState(null);
-
   const audioRef = useRef(null);
   const embedRef = useRef(null);
 
   // Initialize and shuffle cards
   useEffect(() => {
     if (settings.customCardsOnly) {
-      // Use only custom cards
       const shuffledCards = shuffleArray(customCards);
       setCards(shuffledCards);
     } else {
-      // Use filtered cards + custom cards (original behavior)
       const filteredCards = getFilteredCards(settings.selectedCategories);
       const filteredCustomCards = customCards.filter(card =>
         settings.selectedCategories.includes(card.category)
@@ -62,11 +52,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       setTrackPlaylist([]);
     }
   }, [settings.musicUrls]);
-
-  // Check if ads are enabled and configured
-  const adsEnabled = settings.advertisements?.enabled && 
-                     settings.advertisements?.ads?.length > 0 && 
-                     settings.advertisements?.interval > 0;
 
   // Determine if URL is a direct audio file
   const isDirectAudioFile = (url) => {
@@ -116,7 +101,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
         const filename = url.split('/').pop().split('?')[0];
         return filename || 'Audio File';
       }
-      // For generic URLs, try to extract domain name
       const domain = new URL(url).hostname.replace('www.', '');
       return `${domain.charAt(0).toUpperCase() + domain.slice(1)} Audio`;
     } catch {
@@ -137,7 +121,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
     if (url.includes('open.spotify.com')) {
       return url.replace('open.spotify.com', 'open.spotify.com/embed');
     }
-    // For other streaming services or generic URLs, return as-is
     return url;
   };
 
@@ -161,13 +144,11 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       audioRef.current.volume = isMusicMuted ? 0 : settings.musicVolume;
       audioRef.current.loop = false;
 
-      // Add event listeners
       const onLoadStart = () => setIsAudioLoading(true);
       const onCanPlay = () => setIsAudioLoading(false);
       const onError = () => {
         setAudioPlaybackError(`Unable to load audio from ${getTrackTitle(url)}`);
         setIsAudioLoading(false);
-        // Auto-skip to next track after 3 seconds
         setTimeout(handleTrackEnd, 3000);
       };
       const onEnded = handleTrackEnd;
@@ -177,10 +158,8 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       audioRef.current.addEventListener('error', onError);
       audioRef.current.addEventListener('ended', onEnded);
 
-      // Try to play
       await audioRef.current.play();
 
-      // Cleanup function
       return () => {
         if (audioRef.current) {
           audioRef.current.removeEventListener('loadstart', onLoadStart);
@@ -193,7 +172,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       setAudioPlaybackError(`Failed to play ${getTrackTitle(url)}: ${error.message}`);
       setIsAudioLoading(false);
       console.error('Audio playback error:', error);
-      // Auto-skip to next track
       setTimeout(handleTrackEnd, 3000);
     }
   }, [isMusicMuted, settings.musicVolume, handleTrackEnd]);
@@ -210,12 +188,10 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
     let cleanup;
 
     if (isDirectAudioFile(currentUrl)) {
-      // Handle direct audio files
       setupDirectAudio(currentUrl).then(cleanupFn => {
         cleanup = cleanupFn;
       });
     } else {
-      // Handle streaming services and generic URLs
       setMusicError('');
       setIsAudioLoading(false);
       setAudioPlaybackError('');
@@ -223,19 +199,16 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       if (isStreamingService(currentUrl)) {
         // Will be handled by iframe
       } else {
-        // Generic URL - try as audio first, fallback to iframe
         if (audioRef.current) {
           setupDirectAudio(currentUrl).then(cleanupFn => {
             cleanup = cleanupFn;
           }).catch(() => {
-            // If direct audio fails, it will be handled by iframe as fallback
             console.log('Direct audio failed, using iframe fallback');
           });
         }
       }
     }
 
-    // Cleanup function
     return () => {
       if (cleanup) cleanup();
       if (audioRef.current) {
@@ -252,60 +225,11 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
     }
   }, [settings.musicVolume, isMusicMuted]);
 
-  // Check if it's time to show an advertisement
-  const shouldShowAd = useCallback(() => {
-    if (!adsEnabled) return false;
-    const interval = settings.advertisements.interval;
-    // Check if we've shown enough cards since last ad
-    return cardsSinceLastAd >= interval;
-  }, [adsEnabled, settings.advertisements?.interval, cardsSinceLastAd]);
-
-  // Show inline advertisement
-  const showInlineAdvertisement = useCallback(() => {
-    if (!adsEnabled || settings.advertisements.ads.length === 0) return;
-
-    const ads = settings.advertisements.ads;
-    const adToShow = ads[currentAdIndex % ads.length];
-    
-    setIsShowingAd(true);
-    setCurrentAd(adToShow);
-    setAdTimeRemaining(adToShow.duration);
-    setCardsSinceLastAd(0);
-    
-    // Move to next ad for next time
-    setCurrentAdIndex(prev => (prev + 1) % ads.length);
-  }, [adsEnabled, settings.advertisements?.ads, currentAdIndex]);
-
-  // End advertisement and return to cards
-  const endAdvertisement = useCallback(() => {
-    setIsShowingAd(false);
-    setCurrentAd(null);
-    setAdTimeRemaining(0);
-  }, []);
-
-  // Skip advertisement
-  const skipAd = useCallback(() => {
-    endAdvertisement();
-  }, [endAdvertisement]);
-
   // Move to next card
   const moveToNextCard = useCallback(() => {
-    // Check if we should show an ad before moving to next card
-    if (shouldShowAd() && !isShowingAd) {
-      showInlineAdvertisement();
-      return;
-    }
-
-    // If we're showing an ad, end it first
-    if (isShowingAd) {
-      endAdvertisement();
-      return;
-    }
-
     setCurrentCardIndex((prevIndex) => {
       const nextIndex = prevIndex + 1;
       if (nextIndex >= cards.length) {
-        // Start new loop
         setLoopCount(prev => prev + 1);
         const newShuffledCards = shuffleArray(cards);
         setCards(newShuffledCards);
@@ -313,41 +237,25 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       }
       return nextIndex;
     });
-
-    setTotalCardsShown(prev => prev + 1);
-    setCardsSinceLastAd(prev => prev + 1);
     setTimeRemaining(settings.duration * 60);
-  }, [cards, settings.duration, shouldShowAd, showInlineAdvertisement, isShowingAd, endAdvertisement]);
+  }, [cards, settings.duration]);
 
-  // Timer logic for cards and ads
+  // Timer logic
   useEffect(() => {
-    if (isPaused || (cards.length === 0 && !isShowingAd)) return;
+    if (isPaused || cards.length === 0) return;
 
     const interval = setInterval(() => {
-      if (isShowingAd) {
-        // Handle ad timer
-        setAdTimeRemaining((prev) => {
-          if (prev <= 1) {
-            endAdvertisement();
-            setTimeRemaining(settings.duration * 60);
-            return 0;
-          }
-          return prev - 1;
-        });
-      } else {
-        // Handle card timer
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            moveToNextCard();
-            return settings.duration * 60;
-          }
-          return prev - 1;
-        });
-      }
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          moveToNextCard();
+          return settings.duration * 60;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPaused, cards.length, isShowingAd, settings.duration, moveToNextCard, endAdvertisement]);
+  }, [isPaused, cards.length, settings.duration, moveToNextCard]);
 
   // Emergency pause auto-resume
   useEffect(() => {
@@ -355,8 +263,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       const timeout = setTimeout(() => {
         setIsEmergencyPause(false);
         setIsPaused(false);
-      }, 30000); // 30 seconds
-
+      }, 30000);
       setEmergencyPauseTimeout(timeout);
 
       return () => {
@@ -367,7 +274,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
 
   const handleEmergencyPause = useCallback(() => {
     if (isEmergencyPause) {
-      // Resume immediately
       setIsEmergencyPause(false);
       setIsPaused(false);
       if (emergencyPauseTimeout) {
@@ -375,7 +281,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
         setEmergencyPauseTimeout(null);
       }
     } else {
-      // Start emergency pause
       setIsPaused(true);
       setIsEmergencyPause(true);
     }
@@ -395,7 +300,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
   };
 
   const handleEndSession = () => {
-    // Stop music when ending session
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
@@ -407,7 +311,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-
+    
     if (hours > 0) {
       return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -418,7 +322,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
     const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
-
+    
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -426,9 +330,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
   };
 
   const getProgressPercentage = () => {
-    if (isShowingAd && currentAd) {
-      return ((currentAd.duration - adTimeRemaining) / currentAd.duration) * 100;
-    }
     const totalTime = settings.duration * 60;
     return ((totalTime - timeRemaining) / totalTime) * 100;
   };
@@ -445,7 +346,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
     return `${minutes} minutes`;
   };
 
-  if (cards.length === 0 && !isShowingAd) {
+  if (cards.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-warm-50 flex items-center justify-center">
         <div className="text-center">
@@ -453,8 +354,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
           <p className="text-lg text-gray-600">
             {settings.customCardsOnly 
               ? 'No custom cards available for this session...' 
-              : 'Preparing your conversation cards...'
-            }
+              : 'Preparing your conversation cards...'}
           </p>
           {settings.customCardsOnly && (
             <div className="mt-4">
@@ -486,12 +386,12 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
         <div className="hidden">
           <iframe
             ref={embedRef}
-            key={`${currentTrackIndex}-${currentUrl}`} // Force re-render when track changes
+            key={`${currentTrackIndex}-${currentUrl}`}
             src={getEmbedUrl(currentUrl)}
             width="0"
             height="0"
             frameBorder="0"
-            allow="autoplay; encrypted-media; fullscreen"
+            allow="autoplay;encrypted-media;fullscreen"
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
             onError={() => {
               setMusicError(`Unable to load ${getTrackTitle(currentUrl)}`);
@@ -504,45 +404,28 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          {/* Session Info */}
           <div className="flex items-center gap-6 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <SafeIcon icon={FiClock} className="w-4 h-4" />
               <span>Session: {getSessionDuration()}</span>
             </div>
-            {!isShowingAd && (
-              <div className="hidden sm:flex items-center gap-2">
-                <span>Card {currentCardIndex + 1} of {cards.length}</span>
-                <span className="text-primary-600">(Loop {loopCount})</span>
-              </div>
-            )}
-            {isShowingAd && (
-              <div className="flex items-center gap-2">
-                <SafeIcon icon={FiDollarSign} className="w-4 h-4 text-orange-600" />
-                <span className="text-orange-600 font-medium">Advertisement</span>
-              </div>
-            )}
-            {settings.customCardsOnly && !isShowingAd && (
+            <div className="hidden sm:flex items-center gap-2">
+              <span>Card {currentCardIndex + 1} of {cards.length}</span>
+              <span className="text-primary-600">(Loop {loopCount})</span>
+            </div>
+            {settings.customCardsOnly && (
               <div className="flex items-center gap-1">
                 <SafeIcon icon={FiStar} className="w-4 h-4 text-yellow-600" />
                 <span className="text-xs text-yellow-600 font-medium">Custom Only</span>
               </div>
             )}
-            {categoryInfo && !isShowingAd && (
+            {categoryInfo && (
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${categoryInfo.color}`}>
                 {categoryInfo.name}
                 {currentCard.isCustom && (
                   <span className="ml-1 text-xs opacity-75">• Custom</span>
                 )}
               </span>
-            )}
-            {adsEnabled && !isShowingAd && (
-              <div className="flex items-center gap-1">
-                <SafeIcon icon={FiEye} className="w-4 h-4 text-orange-600" />
-                <span className="text-xs text-orange-600">
-                  Ads: {totalCardsShown} cards • Next in {settings.advertisements.interval - cardsSinceLastAd}
-                </span>
-              </div>
             )}
             {trackPlaylist.length > 0 && (
               <div className="flex items-center gap-1">
@@ -557,9 +440,7 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
             )}
           </div>
 
-          {/* Controls */}
           <div className="flex items-center gap-3">
-            {/* Music Controls */}
             {trackPlaylist.length > 0 && (
               <>
                 <button
@@ -579,17 +460,6 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
                   </button>
                 )}
               </>
-            )}
-
-            {/* Skip Ad Button - only show during ads that allow skipping */}
-            {isShowingAd && currentAd?.allowSkip && adTimeRemaining <= currentAd.duration - 5 && (
-              <button
-                onClick={skipAd}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg text-sm font-medium transition-all"
-              >
-                <SafeIcon icon={FiSkipForward} className="w-4 h-4" />
-                Skip Ad
-              </button>
             )}
 
             <button
@@ -658,50 +528,17 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       <div className="bg-white/60 backdrop-blur-sm border-b border-gray-100 px-4 py-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex justify-center mb-4">
-            <div className={`p-3 rounded-full ${
-              isShowingAd 
-                ? 'bg-orange-600/10' 
-                : settings.customCardsOnly 
-                  ? 'bg-yellow-600/10' 
-                  : 'bg-primary-600/10'
-            }`}>
-              <SafeIcon 
-                icon={
-                  isShowingAd 
-                    ? FiDollarSign 
-                    : settings.customCardsOnly 
-                      ? FiStar 
-                      : FiHeart
-                } 
-                className={`w-8 h-8 ${
-                  isShowingAd 
-                    ? 'text-orange-600' 
-                    : settings.customCardsOnly 
-                      ? 'text-yellow-600' 
-                      : 'text-primary-600'
-                }`} 
-              />
+            <div className={`p-3 rounded-full ${settings.customCardsOnly ? 'bg-yellow-600/10' : 'bg-primary-600/10'}`}>
+              <SafeIcon icon={settings.customCardsOnly ? FiStar : FiHeart} className={`w-8 h-8 ${settings.customCardsOnly ? 'text-yellow-600' : 'text-primary-600'}`} />
             </div>
           </div>
-          <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
-            isShowingAd 
-              ? 'from-orange-600 to-orange-800' 
-              : 'from-primary-600 to-primary-800'
-          } bg-clip-text text-transparent mb-2`}>
-            {isShowingAd 
-              ? 'Advertisement' 
-              : settings.customCardsOnly 
-                ? 'Custom Cards Session' 
-                : 'Start Once, Talk Forever'
-            }
+          <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent mb-2`}>
+            {settings.customCardsOnly ? 'Custom Cards Session' : 'Start Once, Talk Forever'}
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            {isShowingAd 
-              ? 'Supporting the platform that brings families together through meaningful conversations.'
-              : settings.customCardsOnly 
-                ? 'Enjoying your personalized conversation cards designed specifically for your family.' 
-                : 'Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally.'
-            }
+            {settings.customCardsOnly 
+              ? 'Enjoying your personalized conversation cards designed specifically for your family.'
+              : 'Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally.'}
           </p>
         </div>
       </div>
@@ -731,86 +568,25 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
           ) : (
             <AnimatePresence mode="wait">
               <motion.div
-                key={isShowingAd ? `ad-${currentAd?.id}` : `card-${currentCard?.id}`}
+                key={`card-${currentCard?.id}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.5 }}
-                className="text-center"
+                className="text-center space-y-8"
               >
-                {/* Card/Ad Content */}
-                <div className={`backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-xl border mb-8 ${
-                  isShowingAd 
-                    ? 'bg-gradient-to-br from-orange-50/90 to-orange-100/90 border-orange-200' 
-                    : 'bg-white/90 border-gray-200'
-                }`}>
-                  {isShowingAd && currentAd ? (
-                    // Advertisement Content
-                    <motion.div
-                      initial={{ scale: 0.9 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <div className="flex items-center justify-center gap-2 mb-6">
-                        <SafeIcon icon={FiEye} className="w-6 h-6 text-orange-600" />
-                        <span className="text-orange-600 font-medium text-lg">Sponsored Content</span>
-                      </div>
-                      
-                      <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-6">
-                        {currentAd.title}
-                      </h1>
-                      
-                      <div 
-                        className="text-lg md:text-xl text-gray-700 leading-relaxed mb-8"
-                        dangerouslySetInnerHTML={{ __html: currentAd.content }}
-                      />
+                {/* Card Content */}
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-xl border border-gray-200">
+                  <motion.h1
+                    className="text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight"
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {currentCard?.question}
+                  </motion.h1>
 
-                      {currentAd.actionText && currentAd.actionUrl && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.4 }}
-                          className="mb-6"
-                        >
-                          <a
-                            href={currentAd.actionUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
-                          >
-                            {currentAd.actionText}
-                            <SafeIcon icon={FiExternalLink} className="w-5 h-5" />
-                          </a>
-                        </motion.div>
-                      )}
-
-                      <div className="text-sm text-gray-500">
-                        Advertisement will end automatically in {formatTime(adTimeRemaining)}
-                        {currentAd.allowSkip && adTimeRemaining <= currentAd.duration - 5 && (
-                          <span className="block mt-2">
-                            <button
-                              onClick={skipAd}
-                              className="text-orange-600 hover:text-orange-700 underline font-medium"
-                            >
-                              Skip this ad →
-                            </button>
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-                  ) : (
-                    // Regular Card Content
-                    <motion.h1
-                      className="text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight"
-                      initial={{ scale: 0.9 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      {currentCard?.question}
-                    </motion.h1>
-                  )}
-                  
-                  {!isShowingAd && currentCard?.isCustom && (
+                  {currentCard?.isCustom && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -829,45 +605,62 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className={`backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto ${
-                    isShowingAd 
-                      ? 'bg-orange-50/70 border border-orange-200' 
-                      : 'bg-white/70'
-                  }`}
+                  className="bg-white/70 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto"
                 >
                   <div className="flex items-center justify-center gap-4 mb-4">
-                    <SafeIcon 
-                      icon={isShowingAd ? FiEye : FiClock} 
-                      className={`w-6 h-6 ${isShowingAd ? 'text-orange-600' : 'text-primary-600'}`} 
-                    />
+                    <SafeIcon icon={FiClock} className="w-6 h-6 text-primary-600" />
                     <span className="text-3xl font-bold text-gray-900">
-                      {isShowingAd ? formatTime(adTimeRemaining) : formatTime(timeRemaining)}
+                      {formatTime(timeRemaining)}
                     </span>
-                    {!isShowingAd && trackPlaylist.length > 0 && (
-                      <SafeIcon 
-                        icon={isMusicMuted ? FiVolumeX : FiMusic} 
-                        className={`w-5 h-5 ${isMusicMuted ? 'text-gray-400' : 'text-primary-600'}`} 
-                      />
+                    {trackPlaylist.length > 0 && (
+                      <SafeIcon icon={isMusicMuted ? FiVolumeX : FiMusic} className={`w-5 h-5 ${isMusicMuted ? 'text-gray-400' : 'text-primary-600'}`} />
                     )}
                   </div>
-                  
-                  {/* Progress Bar */}
+
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <motion.div
-                      className={`h-2 rounded-full transition-all duration-1000 ${
-                        isShowingAd ? 'bg-orange-600' : 'bg-primary-600'
-                      }`}
+                      className="bg-primary-600 h-2 rounded-full transition-all duration-1000"
                       style={{ width: `${getProgressPercentage()}%` }}
                     />
                   </div>
-                  
                   <p className="text-sm text-gray-600 mt-2">
-                    {isShowingAd 
-                      ? 'Advertisement time remaining'
-                      : 'Time remaining for this conversation'
-                    }
+                    Time remaining for this conversation
                   </p>
                 </motion.div>
+
+                {/* Footer Advertisement Section */}
+                {settings.footerAd?.enabled && settings.footerAd?.text && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 max-w-2xl mx-auto"
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <SafeIcon icon={FiEye} className="w-4 h-4 text-blue-600" />
+                      <span className="text-blue-600 font-medium text-xs">Advertisement</span>
+                    </div>
+                    
+                    <div 
+                      className="text-gray-800 mb-4 text-sm leading-relaxed" 
+                      dangerouslySetInnerHTML={{ __html: settings.footerAd.text }} 
+                    />
+                    
+                    {settings.footerAd.url && settings.footerAd.linkText && (
+                      <motion.a
+                        href={settings.footerAd.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {settings.footerAd.linkText}
+                        <SafeIcon icon={FiExternalLink} className="w-3 h-3" />
+                      </motion.a>
+                    )}
+                  </motion.div>
+                )}
               </motion.div>
             </AnimatePresence>
           )}
@@ -878,17 +671,11 @@ const ConversationSession = ({ settings, onEndSession, customCards }) => {
       <div className="bg-white/50 backdrop-blur-sm border-t border-gray-200 px-4 py-3">
         <div className="max-w-6xl mx-auto text-center text-sm text-gray-500">
           <p>
-            {isShowingAd 
-              ? `Advertisement ${currentAdIndex + 1} of ${settings.advertisements?.ads?.length || 0} • Supporting meaningful family conversations`
-              : `Cards automatically rotate every ${formatDuration(settings.duration)} • Put the device down and focus on the conversation`
-            }
-            {!isShowingAd && trackPlaylist.length > 0 && (
+            Cards automatically rotate every {formatDuration(settings.duration)} • Put the device down and focus on the conversation
+            {trackPlaylist.length > 0 && (
               <span className="ml-2">• {trackPlaylist.length} track playlist enhances the experience</span>
             )}
-            {!isShowingAd && adsEnabled && (
-              <span className="ml-2 text-orange-600">• Inline ads every {settings.advertisements.interval} card{settings.advertisements.interval > 1 ? 's' : ''} support this platform</span>
-            )}
-            {!isShowingAd && settings.customCardsOnly && (
+            {settings.customCardsOnly && (
               <span className="ml-2 text-yellow-600">• Custom Cards Only Mode Active</span>
             )}
           </p>

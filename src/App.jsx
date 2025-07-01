@@ -11,10 +11,11 @@ function App() {
     customCardsOnly: false, // New option for custom cards only mode
     musicUrls: [], // Changed to array for multiple URLs
     musicVolume: 0.3, // Added volume control (30% default)
-    advertisements: {
+    footerAd: {
       enabled: false,
-      interval: 5, // Show ad every 5 cards
-      ads: [] // Array of advertisement objects
+      text: '',
+      url: '',
+      linkText: ''
     }
   });
   const [customCards, setCustomCards] = useState([]);
@@ -41,21 +42,22 @@ function App() {
           parsed.musicUrls = [parsed.musicUrl];
           delete parsed.musicUrl;
         }
-        
-        // Ensure advertisements object exists
-        if (!parsed.advertisements) {
-          parsed.advertisements = {
+
+        // Ensure footerAd object exists
+        if (!parsed.footerAd) {
+          parsed.footerAd = {
             enabled: false,
-            interval: 5,
-            ads: []
+            text: '',
+            url: '',
+            linkText: ''
           };
         }
-        
+
         // Ensure customCardsOnly exists
         if (parsed.customCardsOnly === undefined) {
           parsed.customCardsOnly = false;
         }
-        
+
         setSettings(prev => ({ ...prev, ...parsed }));
       } catch (error) {
         console.error('Error loading settings:', error);

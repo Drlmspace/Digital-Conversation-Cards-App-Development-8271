@@ -4,7 +4,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { categories } from '../data/conversationCards';
 
-const { FiPlay, FiShield, FiHeart, FiUsers, FiClock, FiEye, FiEyeOff, FiPlus, FiTrash2, FiEdit3, FiMusic, FiVolume2, FiList, FiCheck, FiX, FiLink, FiHeadphones, FiDollarSign, FiTarget, FiStar } = FiIcons;
+const { FiPlay, FiShield, FiHeart, FiUsers, FiClock, FiEye, FiEyeOff, FiPlus, FiTrash2, FiEdit3, FiMusic, FiVolume2, FiList, FiCheck, FiX, FiLink, FiHeadphones, FiTarget, FiStar, FiExternalLink } = FiIcons;
 
 const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCustomCardsChange }) => {
   const [showAdminPortal, setShowAdminPortal] = useState(false);
@@ -18,15 +18,6 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
   const [editingCard, setEditingCard] = useState(null);
   const [musicUrlErrors, setMusicUrlErrors] = useState({});
   const [newMusicUrl, setNewMusicUrl] = useState('');
-  const [newAd, setNewAd] = useState({
-    title: '',
-    content: '',
-    duration: 30,
-    actionText: '',
-    actionUrl: '',
-    allowSkip: true
-  });
-  const [editingAd, setEditingAd] = useState(null);
 
   const ADMIN_CREDENTIALS = {
     username: 'GameMicey',
@@ -44,17 +35,6 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     { value: 15, label: '15 minutes' },
     { value: 30, label: '30 minutes' },
     { value: 60, label: '1 hour' }
-  ];
-
-  const adIntervalOptions = [
-    { value: 1, label: 'Every 1 card' },
-    { value: 3, label: 'Every 3 cards' },
-    { value: 5, label: 'Every 5 cards' },
-    { value: 7, label: 'Every 7 cards' },
-    { value: 10, label: 'Every 10 cards' },
-    { value: 15, label: 'Every 15 cards' },
-    { value: 20, label: 'Every 20 cards' },
-    { value: 30, label: 'Every 30 cards' }
   ];
 
   // Determine if URL is a direct audio file
@@ -145,15 +125,6 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     setEditingCard(null);
     setMusicUrlErrors({});
     setNewMusicUrl('');
-    setNewAd({
-      title: '',
-      content: '',
-      duration: 30,
-      actionText: '',
-      actionUrl: '',
-      allowSkip: true
-    });
-    setEditingAd(null);
   };
 
   const handleCreateCard = (e) => {
@@ -174,10 +145,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
 
   const handleEditCard = (card) => {
     setEditingCard(card);
-    setNewCard({
-      question: card.question,
-      category: card.category
-    });
+    setNewCard({ question: card.question, category: card.category });
   };
 
   const handleUpdateCard = (e) => {
@@ -265,135 +233,25 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
     setNewMusicUrl('');
   };
 
-  // Advertisement functions
-  const handleCreateAd = (e) => {
-    e.preventDefault();
-    if (!newAd.title.trim() || !newAd.content.trim()) return;
-
-    const ad = {
-      id: Date.now(),
-      title: newAd.title.trim(),
-      content: newAd.content.trim(),
-      duration: newAd.duration,
-      actionText: newAd.actionText.trim(),
-      actionUrl: newAd.actionUrl.trim(),
-      allowSkip: newAd.allowSkip
-    };
-
-    const currentAds = settings.advertisements?.ads || [];
+  const handleFooterAdToggle = (enabled) => {
     const newSettings = {
       ...settings,
-      advertisements: {
-        ...settings.advertisements,
-        ads: [...currentAds, ad]
-      }
-    };
-
-    onSettingsChange(newSettings);
-    setNewAd({
-      title: '',
-      content: '',
-      duration: 30,
-      actionText: '',
-      actionUrl: '',
-      allowSkip: true
-    });
-  };
-
-  const handleEditAd = (ad) => {
-    setEditingAd(ad);
-    setNewAd({
-      title: ad.title,
-      content: ad.content,
-      duration: ad.duration,
-      actionText: ad.actionText || '',
-      actionUrl: ad.actionUrl || '',
-      allowSkip: ad.allowSkip
-    });
-  };
-
-  const handleUpdateAd = (e) => {
-    e.preventDefault();
-    if (!newAd.title.trim() || !newAd.content.trim() || !editingAd) return;
-
-    const updatedAds = (settings.advertisements?.ads || []).map(ad =>
-      ad.id === editingAd.id
-        ? {
-            ...ad,
-            title: newAd.title.trim(),
-            content: newAd.content.trim(),
-            duration: newAd.duration,
-            actionText: newAd.actionText.trim(),
-            actionUrl: newAd.actionUrl.trim(),
-            allowSkip: newAd.allowSkip
-          }
-        : ad
-    );
-
-    const newSettings = {
-      ...settings,
-      advertisements: {
-        ...settings.advertisements,
-        ads: updatedAds
-      }
-    };
-
-    onSettingsChange(newSettings);
-    setEditingAd(null);
-    setNewAd({
-      title: '',
-      content: '',
-      duration: 30,
-      actionText: '',
-      actionUrl: '',
-      allowSkip: true
-    });
-  };
-
-  const handleDeleteAd = (adId) => {
-    if (confirm('Are you sure you want to delete this advertisement?')) {
-      const updatedAds = (settings.advertisements?.ads || []).filter(ad => ad.id !== adId);
-      const newSettings = {
-        ...settings,
-        advertisements: {
-          ...settings.advertisements,
-          ads: updatedAds
-        }
-      };
-      onSettingsChange(newSettings);
-    }
-  };
-
-  const cancelAdEdit = () => {
-    setEditingAd(null);
-    setNewAd({
-      title: '',
-      content: '',
-      duration: 30,
-      actionText: '',
-      actionUrl: '',
-      allowSkip: true
-    });
-  };
-
-  const toggleAdvertisements = (enabled) => {
-    const newSettings = {
-      ...settings,
-      advertisements: {
+      footerAd: {
         enabled,
-        interval: settings.advertisements?.interval || 5,
-        ads: settings.advertisements?.ads || []
+        text: settings.footerAd?.text || '',
+        url: settings.footerAd?.url || '',
+        linkText: settings.footerAd?.linkText || ''
       }
     };
     onSettingsChange(newSettings);
   };
 
-  const updateAdInterval = (interval) => {
+  const updateFooterAd = (field, value) => {
     const newSettings = {
       ...settings,
-      advertisements: {
-        ...settings.advertisements,
-        interval
+      footerAd: {
+        ...settings.footerAd,
+        [field]: value
       }
     };
     onSettingsChange(newSettings);
@@ -516,8 +374,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                 Start Once, Talk Forever
               </h1>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                Digital conversation cards that bring families together through meaningful dialogue. 
-                Set your preferences, press start, and let the conversations flow naturally.
+                Digital conversation cards that bring families together through meaningful dialogue. Set your preferences, press start, and let the conversations flow naturally.
               </p>
             </motion.div>
 
@@ -589,9 +446,9 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                       + {settings.musicUrls.length} Audio Track{settings.musicUrls.length > 1 ? 's' : ''}
                     </span>
                   )}
-                  {settings.advertisements?.enabled && settings.advertisements?.ads?.length > 0 && (
-                    <span className="block text-xs text-orange-600 mt-1">
-                      + {settings.advertisements.ads.length} Advertisement{settings.advertisements.ads.length > 1 ? 's' : ''}
+                  {settings.footerAd?.enabled && settings.footerAd?.text && (
+                    <span className="block text-xs text-blue-600 mt-1">
+                      + Footer Advertisement
                     </span>
                   )}
                 </div>
@@ -630,11 +487,10 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
               className="text-center text-gray-500 max-w-lg mx-auto"
             >
               <p className="text-sm">
-                Once started, cards will automatically rotate every {formatDuration(settings.duration)}. 
-                Perfect for family dinners, gatherings, and meaningful connections.
-                {settings.advertisements?.enabled && settings.advertisements?.ads?.length > 0 && (
-                  <span className="block mt-1 text-orange-600">
-                    • Advertisements appear every {settings.advertisements.interval} card{settings.advertisements.interval > 1 ? 's' : ''} to support this platform
+                Once started, cards will automatically rotate every {formatDuration(settings.duration)}. Perfect for family dinners, gatherings, and meaningful connections.
+                {settings.footerAd?.enabled && settings.footerAd?.text && (
+                  <span className="block mt-1 text-blue-600">
+                    • Footer advertisement will appear below conversation cards to support this platform
                   </span>
                 )}
               </p>
@@ -728,7 +584,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                 </div>
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">Admin Portal</h2>
-                  <p className="text-sm text-gray-600">Customize conversation settings, create custom cards, and manage advertisements</p>
+                  <p className="text-sm text-gray-600">Customize conversation settings, create custom cards, and manage footer advertisement</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -770,14 +626,14 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                 Custom Cards ({customCards.length})
               </button>
               <button
-                onClick={() => setActiveTab('advertisements')}
+                onClick={() => setActiveTab('advertisement')}
                 className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                  activeTab === 'advertisements'
+                  activeTab === 'advertisement'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Advertisements ({settings.advertisements?.ads?.length || 0})
+                Footer Advertisement
               </button>
             </div>
 
@@ -803,18 +659,15 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                   </div>
                   <div className="text-sm text-gray-700 space-y-2">
                     <p>
-                      <strong>When enabled:</strong> Only your custom conversation cards will be used during sessions. 
-                      All built-in categories will be ignored.
+                      <strong>When enabled:</strong> Only your custom conversation cards will be used during sessions. All built-in categories will be ignored.
                     </p>
                     <p>
-                      <strong>Perfect for:</strong> Personalized family sessions, specific themes, or when you want 
-                      complete control over the conversation topics.
+                      <strong>Perfect for:</strong> Personalized family sessions, specific themes, or when you want complete control over the conversation topics.
                     </p>
                     {settings.customCardsOnly && customCards.length === 0 && (
                       <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
                         <p className="text-red-700 font-medium">
-                          ⚠️ You have no custom cards created yet! Please create some custom cards in the "Custom Cards" tab 
-                          before starting a session, or disable this option.
+                          ⚠️ You have no custom cards created yet! Please create some custom cards in the "Custom Cards" tab before starting a session, or disable this option.
                         </p>
                       </div>
                     )}
@@ -1058,7 +911,6 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                         required
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Category
@@ -1073,7 +925,6 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
                         ))}
                       </select>
                     </div>
-
                     <div className="flex gap-3">
                       <button
                         type="submit"
@@ -1139,230 +990,100 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
               </div>
             ) : (
               <div className="space-y-8">
-                {/* Advertisement Toggle */}
-                <div className="bg-orange-50 rounded-xl p-6">
+                {/* Footer Advertisement Toggle */}
+                <div className="bg-blue-50 rounded-xl p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <SafeIcon icon={FiDollarSign} className="w-5 h-5 text-orange-600" />
-                      Advertisement System
+                      <SafeIcon icon={FiEye} className="w-5 h-5 text-blue-600" />
+                      Footer Advertisement
                     </h3>
                     <button
-                      onClick={() => toggleAdvertisements(!settings.advertisements?.enabled)}
+                      onClick={() => handleFooterAdToggle(!settings.footerAd?.enabled)}
                       className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        settings.advertisements?.enabled
-                          ? 'bg-orange-600 text-white'
+                        settings.footerAd?.enabled
+                          ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      {settings.advertisements?.enabled ? 'Enabled' : 'Disabled'}
+                      {settings.footerAd?.enabled ? 'Enabled' : 'Disabled'}
                     </button>
                   </div>
-                  {settings.advertisements?.enabled && (
+                  <p className="text-sm text-gray-700">
+                    Display an advertisement section below conversation cards during game sessions. Perfect for promoting products, services, or messages without interrupting the conversation flow.
+                  </p>
+                </div>
+
+                {/* Footer Advertisement Configuration */}
+                {settings.footerAd?.enabled && (
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Configure Footer Advertisement</h3>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Advertisement Interval
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {adIntervalOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() => updateAdInterval(option.value)}
-                              className={`p-3 rounded-lg border-2 transition-all text-sm ${
-                                settings.advertisements?.interval === option.value
-                                  ? 'border-orange-500 bg-orange-50 text-orange-700'
-                                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Add New Advertisement Form */}
-                {settings.advertisements?.enabled && (
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      {editingAd ? 'Edit Advertisement' : 'Create New Advertisement'}
-                    </h3>
-                    <form onSubmit={editingAd ? handleUpdateAd : handleCreateAd} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Advertisement Title
-                        </label>
-                        <input
-                          type="text"
-                          value={newAd.title}
-                          onChange={(e) => setNewAd({ ...newAd, title: e.target.value })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                          placeholder="Enter advertisement title..."
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Advertisement Content (HTML supported)
+                          Advertisement Text (HTML supported)
                         </label>
                         <textarea
-                          value={newAd.content}
-                          onChange={(e) => setNewAd({ ...newAd, content: e.target.value })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
-                          placeholder="Enter advertisement content... You can use HTML tags like <strong>, <em>, <br>, etc."
+                          value={settings.footerAd?.text || ''}
+                          onChange={(e) => updateFooterAd('text', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                          placeholder="Enter your advertisement text... You can use HTML tags like <strong>, <em>, <br>, etc."
                           rows="4"
-                          required
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                          HTML is supported. Use tags like &lt;strong&gt;, &lt;em&gt;, &lt;br&gt;, etc. for formatting.
+                        </p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Duration (seconds)
-                          </label>
-                          <input
-                            type="number"
-                            value={newAd.duration}
-                            onChange={(e) => setNewAd({ ...newAd, duration: parseInt(e.target.value) })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                            min="5"
-                            max="120"
-                            required
-                          />
-                        </div>
-
-                        <div className="flex items-center">
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={newAd.allowSkip}
-                              onChange={(e) => setNewAd({ ...newAd, allowSkip: e.target.checked })}
-                              className="sr-only"
-                            />
-                            <div className={`relative w-11 h-6 rounded-full transition-colors ${
-                              newAd.allowSkip ? 'bg-orange-600' : 'bg-gray-300'
-                            }`}>
-                              <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                                newAd.allowSkip ? 'translate-x-5' : 'translate-x-0'
-                              }`} />
-                            </div>
-                            <span className="ml-3 text-sm font-medium text-gray-700">
-                              Allow Skip
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Action Button Text (optional)
+                            Link Text (optional)
                           </label>
                           <input
                             type="text"
-                            value={newAd.actionText}
-                            onChange={(e) => setNewAd({ ...newAd, actionText: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                            placeholder="e.g., Learn More, Visit Website"
+                            value={settings.footerAd?.linkText || ''}
+                            onChange={(e) => updateFooterAd('linkText', e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="e.g., Learn More, Visit Website, Shop Now"
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Action URL (optional)
+                            Link URL (optional)
                           </label>
                           <input
                             type="url"
-                            value={newAd.actionUrl}
-                            onChange={(e) => setNewAd({ ...newAd, actionUrl: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                            value={settings.footerAd?.url || ''}
+                            onChange={(e) => updateFooterAd('url', e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             placeholder="https://example.com"
                           />
                         </div>
                       </div>
 
-                      <div className="flex gap-3">
-                        <button
-                          type="submit"
-                          className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
-                        >
-                          <SafeIcon icon={editingAd ? FiEdit3 : FiPlus} className="w-4 h-4" />
-                          {editingAd ? 'Update Advertisement' : 'Add Advertisement'}
-                        </button>
-                        {editingAd && (
-                          <button
-                            type="button"
-                            onClick={cancelAdEdit}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium transition-all duration-200"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                {/* Advertisements List */}
-                {settings.advertisements?.enabled && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Current Advertisements ({settings.advertisements?.ads?.length || 0})
-                    </h3>
-                    {!settings.advertisements?.ads?.length ? (
-                      <div className="text-center py-12 text-gray-500">
-                        <SafeIcon icon={FiTarget} className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                        <p>No advertisements yet. Create your first one above!</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {settings.advertisements.ads.map((ad) => (
-                          <div key={ad.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="text-gray-900 font-medium">{ad.title}</h4>
-                                  <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-medium">
-                                    {ad.duration}s
-                                  </span>
-                                  {ad.allowSkip && (
-                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
-                                      Skippable
-                                    </span>
-                                  )}
+                      {/* Preview */}
+                      {settings.footerAd?.text && (
+                        <div className="border-t pt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Preview:</h4>
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-2 mb-2">
+                                <SafeIcon icon={FiEye} className="w-4 h-4 text-blue-600" />
+                                <span className="text-blue-600 font-medium text-xs">Advertisement</span>
+                              </div>
+                              <div className="text-gray-800 text-sm mb-3" dangerouslySetInnerHTML={{ __html: settings.footerAd.text }} />
+                              {settings.footerAd.url && settings.footerAd.linkText && (
+                                <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                  {settings.footerAd.linkText}
+                                  <SafeIcon icon={FiExternalLink} className="w-3 h-3" />
                                 </div>
-                                <div 
-                                  className="text-sm text-gray-600 mb-2"
-                                  dangerouslySetInnerHTML={{ __html: ad.content }}
-                                />
-                                {ad.actionText && ad.actionUrl && (
-                                  <div className="text-xs text-blue-600">
-                                    Action: {ad.actionText} → {ad.actionUrl}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 ml-4">
-                                <button
-                                  onClick={() => handleEditAd(ad)}
-                                  className="text-gray-400 hover:text-orange-600 transition-colors"
-                                >
-                                  <SafeIcon icon={FiEdit3} className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteAd(ad.id)}
-                                  className="text-gray-400 hover:text-red-600 transition-colors"
-                                >
-                                  <SafeIcon icon={FiTrash2} className="w-4 h-4" />
-                                </button>
-                              </div>
+                              )}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1372,11 +1093,7 @@ const StartScreen = ({ onStart, settings, onSettingsChange, customCards, onCusto
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 mt-8">
               <button
                 onClick={handleStartSession}
-                disabled={
-                  settings.customCardsOnly 
-                    ? customCards.length === 0 
-                    : settings.selectedCategories.length === 0
-                }
+                disabled={settings.customCardsOnly ? customCards.length === 0 : settings.selectedCategories.length === 0}
                 className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <SafeIcon icon={FiPlay} className="w-5 h-5" />
